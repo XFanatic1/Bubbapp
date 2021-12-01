@@ -130,7 +130,7 @@ app.post('/b', function(req, res) {
   var form = new formidable.IncomingForm();
   form.parse(req, function (err, fields, files) {
     var oldpath = files.filetoupload.filepath;
-    var newpath = '/Users/eriktuft/Desktop/untitled folder/public/' + files.filetoupload.originalFilename;
+    var newpath = '/Users/XXX/Desktop/untitled folder/public/' + files.filetoupload.originalFilename;
     var imgname = files.filetoupload.originalFilename;
     console.log(imgname)
     Book.updateOne({name: username},{img: imgname},(err,res)=>{
