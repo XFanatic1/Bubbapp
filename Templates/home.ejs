@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container">
+        
+        <div class="menu">
+            <div><a href="/homepage">Home</a></div>
+            <div><a href="">About us</a></div>
+            <div><a href="/a">login</a></div>
+            <div><a href="/b">Profile</a></div>
+        </div>
+
+        <div class="panel">
+            
+            <button onclick="newroom()">+</button>
+            <form action="" id="roomname" class="nameser">
+                <input id=""type="text">
+                
+            </form>
+            <ul id="rooms">
+
+            </ul>
+        </div>
+        <div class="paneltwo">
+            <ul id="messages"></ul>
+        <form id="form" action="">
+          <input placeholder="What would you like to say?" class="conbar"id="input" autocomplete="off" />
+        </form>
+            <div class="chatbar"></div>
+        </div>
+        <script src="/socket.io/socket.io.js"></script>
+        
+        <script>
+        var id = Math.floor((Math.random() * 100)) //this is a place holder to account ID
+        console.log('ID is: ' + id)
+        var selectedRoom
+        var messages = document.getElementById('messages');
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+
+        var socket = io()
+
+        socket.emit('loadrooms', id)
+
+        function newroom() {
+            var roomname = document.getElementById("roomname")[0].value;
+            socket.emit('newroom', roomname)
+        }
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value) {
+            console.log('sending data to '+ selectedRoom)
+            socket.emit('chat message', input.value, selectedRoom);
+            input.value = '';
+            }
+        });
+        function listen() {
+            console.log('listening for... ' + selectedRoom)
+            socket.on(selectedRoom, function(msg) {
+                console.log('room is: ' + selectedRoom + msg)
+                var item = document.createElement('li');
+                item.textContent = msg;
+                messages.appendChild(item);
+                window.scrollTo(0, document.body.scrollHeight);
+                item.setAttribute("class", "serdiv");
+            });
+        }
+        function setroom(data) {
+            socket.off(selectedRoom);
+            selectedRoom = data
+            socket.emit('loadfromdb', selectedRoom, id)
+            listen()
+        }
+        socket.on('showroom', function(data) {
+            console.log('recieved room name')
+            var item = document.createElement('li');
+            item.textContent = data;
+            rooms.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+            item.onclick = function() {setroom(data);};
+            item.setAttribute("class", "serdiv");
+        });
+        socket.on('msg' + id, function(msgobj) {
+            var item = document.createElement('li');
+            item.textContent = msgobj.message;
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+            item.setAttribute("class", "serdiv");
+        });
+        socket.on('room' + id, function(collectionobj) {
+            var item = document.createElement('li');
+            item.textContent = collectionobj.name; //envuntually make functions
+            rooms.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+            item.setAttribute("class", "serdiv");
+            item.onclick = function() {setroom(collectionobj.name);};
+        });
+        </script>
+    </div>
+</body>
+</html>
+
+<!-- $$$ STYLEING FOR COMPLETE.HTML $$$ -->
+
+<style>
+.nameser {
+    position: relative;
+    left: 75px;
+    top: -23px;
+}
+.serdiv {
+    position: relative;
+    width: fit-content;
+    margin-bottom: 10px;
+    color: #60626e;
+    right: 10px;
+    padding: 10px;
+    background-color: #e1e2eb;
+    border-radius: 10px;
+    word-wrap:break-word;
+    max-width: 97%;
+}
+.serdiv:hover{
+    cursor: pointer;
+    background-color: #dcdde6;
+}
+button {
+    left: 15px;
+    position: relative;
+    text-decoration: none;
+    color: #60626e;
+    font: 30px helvetica;
+    padding: 0px 13px 2px 13px;
+    border: 1px solid #dcdde6;
+    background-color: #e1e2eb;
+    border-radius: 15px;
+    top: 15px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+button:hover {
+    background-color: #dcdde6
+}
+input:focus {
+    outline:none;
+}
+.mesdiv {
+    width: fit-content;
+    margin-bottom: 10px;
+    color: #60626e;
+    padding: 10px;
+    background-color: #dcdde6;
+    border-radius: 10px;
+    word-wrap:break-word;
+    max-width: 97%;
+}
+.server {
+    height: 75px;
+    width: 95%;
+    background-color: #d7d7dd;
+    border-radius: 10px;
+}
+ul {
+    position: relative;
+    list-style-type: none;
+    right: 14px;
+}
+.servers {
+    margin-left: 20px;
+    color: #60626e;
+}
+.extra {
+    position: absolute;
+    bottom: 0px;
+    left: 93%;
+    margin-bottom: 15px;
+}
+.conbar {
+    position: absolute;
+    bottom: 0px;
+    background-color: #E6E7EE;
+    border: 1px solid #d1d9e6;
+    -webkit-box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
+        box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
+    height: 40px;
+    width: 95%;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    left: 1.5%;
+    padding-left: 10px;
+}
+
+.paneltwo{
+    position: relative;
+    grid-row: 2;
+    grid-column: 2;
+    margin: 25px;
+    margin-right: 50px;
+    margin-bottom: 40px;
+    background-color: #E6E7EE;
+    border: 1px solid #d1d9e6;
+    border-radius: 5px;
+    -webkit-box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+        box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+} 
+.container {
+  display: grid;
+  grid-template-columns: 0.5fr 1.5fr; 
+  grid-template-rows: 0.3fr 2.5fr;
+  gap: 0px 0px; 
+  grid-auto-flow: row;
+  grid-template-areas:
+    "."
+    ".";
+}
+
+
+html, body , .container {
+  height: 100%;
+  margin: 0;
+  background-color: #e1e2eb;
+  font-family: helvetica;
+}
+a{
+    position: relative;
+    top: 35px;
+    font-weight: normal;
+    text-decoration: none;
+    color: #60626e;
+    font: 20px helvetica;
+    padding: 5px 13px 5px 13px;
+    border: 1px solid #dcdde6;
+    background-color: #e1e2eb;
+    border-radius: 15px;
+}
+a:hover{
+    background-color: #dcdde6;
+}
+.menu {
+    border-radius: 5px;
+    margin-left: 40px;
+    margin-right: 50px;
+    position: relative;
+    grid-column: 1 / span 2;
+    height: 100px;
+    display: flex;
+    justify-content: space-around;
+    padding-left: 35px;
+    padding-right: 35px;
+    font-family: Helvetica;
+    background-color: #E6E7EE;
+    border: 1px solid #d1d9e6;
+    -webkit-box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+        box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+}
+.panel {
+    position: relative;
+    grid-row: 2;
+    grid-column: 1;
+    margin: 25px;
+    margin-right: 0;
+    margin-left: 40px;
+    margin-bottom: 40px;
+    background-color: #E6E7EE;
+    border: 1px solid #d1d9e6;
+    border-radius: 5px;
+    -webkit-box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+        box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #fff;
+}
+</style>
