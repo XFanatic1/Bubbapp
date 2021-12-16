@@ -8,8 +8,8 @@
     <title>Document</title>
 </head>
 <body>
+    
     <div class="container">
-        
         <div class="menu">
             <div><a href="/homepage">Home</a></div>
             <div><a href="">About us</a></div>
@@ -21,14 +21,14 @@
             
             <button onclick="newroom()">+</button>
             <form action="" id="roomname" class="nameser">
-                <input id=""type="text">
+                <input id=""type="text" placeholder="New Room Name" class="newroom">
                 
             </form>
             <ul id="rooms">
-
+ 
             </ul>
         </div>
-        <div class="paneltwo">
+        <div class="paneltwo" id="mesholder">
             <ul id="messages"></ul>
         <form id="form" action="">
           <input placeholder="What would you like to say?" class="conbar"id="input" autocomplete="off" />
@@ -38,15 +38,19 @@
         <script src="/socket.io/socket.io.js"></script>
         
         <script>
+
         var id = Math.floor((Math.random() * 100)) //this is a place holder to account ID
-        console.log('ID is: ' + id)
         var selectedRoom
         var messages = document.getElementById('messages');
         var form = document.getElementById('form');
         var input = document.getElementById('input');
-
+        var user
+        var loggedin
         var socket = io()
-
+        if (sessionStorage.getItem('loggedin') !== 'true') { 
+            socket.emit('requser', id)
+        }
+  
         socket.emit('loadrooms', id)
 
         function newroom() {
@@ -57,23 +61,35 @@
             e.preventDefault();
             if (input.value) {
             console.log('sending data to '+ selectedRoom)
-            socket.emit('chat message', input.value, selectedRoom);
+            socket.emit('chat message', user.name + ': ' + input.value, selectedRoom);
             input.value = '';
             }
         });
         function listen() {
+            user = JSON.parse(sessionStorage.user);
             console.log('listening for... ' + selectedRoom)
             socket.on(selectedRoom, function(msg) {
                 console.log('room is: ' + selectedRoom + msg)
                 var item = document.createElement('li');
                 item.textContent = msg;
                 messages.appendChild(item);
-                window.scrollTo(0, document.body.scrollHeight);
+                // window.scrollTo(0, document.body.scrollHeight);
                 item.setAttribute("class", "serdiv");
+                item.setAttribute("id", "demo");
             });
         }
         function setroom(data) {
             socket.off(selectedRoom);
+            var myobj = document.getElementById('demo');
+                if (myobj !== null) {
+                    while(true) {
+                        myobj = document.getElementById('demo'); //fetches new element
+                        if (myobj === null) {
+                            break
+                        }
+                        myobj.remove()
+                    }
+                }
             selectedRoom = data
             socket.emit('loadfromdb', selectedRoom, id)
             listen()
@@ -83,7 +99,7 @@
             var item = document.createElement('li');
             item.textContent = data;
             rooms.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
+            // window.scrollTo(0, document.body.scrollHeight);
             item.onclick = function() {setroom(data);};
             item.setAttribute("class", "serdiv");
         });
@@ -91,17 +107,27 @@
             var item = document.createElement('li');
             item.textContent = msgobj.message;
             messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
+            // window.scrollTo(0, document.body.scrollHeight);
             item.setAttribute("class", "serdiv");
+            item.setAttribute("id", "demo");
         });
         socket.on('room' + id, function(collectionobj) {
             var item = document.createElement('li');
             item.textContent = collectionobj.name; //envuntually make functions
             rooms.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
+            // window.scrollTo(0, document.body.scrollHeight);
             item.setAttribute("class", "serdiv");
             item.onclick = function() {setroom(collectionobj.name);};
         });
+        socket.on('userobj' + id, function(userobj) {
+            console.log('setting item in storage')
+            sessionStorage.setItem('user', JSON.stringify(userobj));
+            sessionStorage.setItem('loggedin', true);
+            user = JSON.parse(sessionStorage.user);
+            logged = JSON.parse(sessionStorage.loggedin);
+            console.log(user.name)
+        });
+
         </script>
     </div>
 </body>
@@ -110,6 +136,16 @@
 <!-- $$$ STYLEING FOR COMPLETE.HTML $$$ -->
 
 <style>
+    .newroom {
+        position: relative;
+        background-color: #E6E7EE;
+        border: 1px solid #d1d9e6;
+        -webkit-box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
+        box-shadow: inset 2px 2px 5px #b8b9be, inset -3px -3px 7px #fff;
+        border-radius: 10px;
+        padding: 10px;
+        top: -11px;
+    }
 .nameser {
     position: relative;
     left: 75px;
@@ -198,6 +234,7 @@ ul {
 }
 
 .paneltwo{
+    overflow-y:auto;
     position: relative;
     grid-row: 2;
     grid-column: 2;

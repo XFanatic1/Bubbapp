@@ -73,7 +73,7 @@ MongoClient.connect(url, function (err, db) {
           console.log("retry");
           res.sendFile(__dirname + "/login.html");
         }
-      }, 1000);
+      }, 250); //gotta learn async functions this will break my app some time later...
     }
     finddata();
   });
@@ -94,7 +94,6 @@ MongoClient.connect(url, function (err, db) {
       io.emit("showroom", roomname);
     });
     socket.on("loadfromdb", (room, id) => {
-      console.log(id);
       dbo.collection(room).find().forEach(function (doc) {
           io.emit("msg" + id, doc); // ultimatly wanted to send collection as obj the ireterate but im too lazy, please do later
         });
@@ -104,17 +103,18 @@ MongoClient.connect(url, function (err, db) {
         io.emit("room" + id, doc); 
       });
     });
+    socket.on('requser', (id) => {
+      io.emit('userobj' + id, userobj)
+    });
   });
 });
 
 server.listen(8080, function () {
   console.log("server is running on port 8080");
 });
-
 app.get("/homepage", function (req, res) {
   res.render(__dirname + "/home.ejs");
 });
-
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/signup.html");
 });
