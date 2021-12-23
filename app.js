@@ -46,18 +46,34 @@ const io = new Server(server);
 
 MongoClient.connect(url, function (err, db) {
   var dbo = db.db("mydb");
-  insertdata = function () {
-    var myobj = {
-      name: signupuser,
-      Password: signuppass,
-      img: "/muchcold-1tbom1k.png",
-      bio: "Default Doge enjoyer"
+  app.post("/", function (req, res) {
+    signupuser = String(req.body.Username);
+    signuppass = String(req.body.Password);
+    insertdata = function () {
+      let bool = true
+        dbo.collection('datas').find({name: signupuser}).forEach(function (doc) {
+          if (doc.name === signupuser) {
+            bool = false
+          }
+        });
+        if (bool === true) {
+          var myobj = {
+            name: signupuser,
+            Password: signuppass,
+            img: "/muchcold-1tbom1k.png",
+            bio: "Default Doge enjoyer"
+          };
+          dbo.collection("datas").insertOne(myobj, function (err, res) {
+            if (err) throw err;
+            console.log("1 document inserted");
+          });
+          res.sendFile(__dirname + "/login.html");
+        }else {
+          res.sendFile(__dirname + "/signup.html");
+        }
     };
-    dbo.collection("datas").insertOne(myobj, function (err, res) {
-      if (err) throw err;
-      console.log("1 document inserted");
-    });
-  };
+    insertdata();
+  });
   app.post("/a", function (req, res) {
     username = String(req.body.Username);
     password = String(req.body.Password); // remember to type the two variables lowercase!
@@ -82,7 +98,6 @@ MongoClient.connect(url, function (err, db) {
   });
   io.on("connection", (socket) => {
     socket.on("chat message", (nameuser, msg, room) => {
-      console.log(nameuser)
       msgobj = { message: msg, name: nameuser};
       dbo.collection(room).insertOne(msgobj, function (err, res) {
         console.log("message added to db");
@@ -123,6 +138,34 @@ MongoClient.connect(url, function (err, db) {
         io.emit('userprofiledata' + id, doc.bio)
       });
     })
+    socket.on("newdmroom", (dmname, otheruser) => {
+      let bool = true
+      dbo.collection('coldmnames').find({name: dmname + ' and ' + otheruser}).forEach(function (doc) {
+        if (doc !== null) {
+          console.log('retry')
+          bool = false
+        }
+      });
+      if (bool === true) {
+        dbo.createCollection(dmname + ' and ' + otheruser, function (err, res) {
+          console.log(dmname + " Collection created!");
+        });
+        let colnameobj = {name: dmname + ' and ' + otheruser, user1: dmname, user2: otheruser}
+        dbo.collection('coldmnames').insertOne(colnameobj)
+        io.emit(dmname, colnameobj.name);
+        io.emit(otheruser, colnameobj.name);
+      }
+    })
+    socket.on("loaddmrooms", (id) => {
+      dbo.collection('coldmnames').find().forEach(function (doc) {
+        if (doc.user1 === id) {
+          io.emit("room" + id, doc.name); 
+        }
+        if (doc.user2 === id) {
+          io.emit("room" + id, doc.name); 
+        }
+      });
+    });
   });
 });
 app.get('/userprofile', function (req, res) {
@@ -138,19 +181,20 @@ app.get("/", function (req, res) {
   res.sendFile(__dirname + "/signup.html");
 });
 
-app.post("/", function (req, res) {
-  signupuser = String(req.body.Username);
-  signuppass = String(req.body.Password);
-  res.sendFile(__dirname + "/login.html");
-
-  insertdata();
-});
-
 app.get("/a", function (req, res) {
   res.sendFile(__dirname + "/login.html");
 });
 
 app.get("/Profile", function (req, res) {
   res.sendFile(__dirname + "/profile.html", {});
-  io.emit('a', 'hello')
 });
+
+app.get("/homedm", function (req, res) {
+  res.sendFile(__dirname + "/homedm.html", {});
+});
+
+
+
+
+
+
