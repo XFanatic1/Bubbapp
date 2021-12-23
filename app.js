@@ -13,6 +13,7 @@ const Schema = mongoose.Schema;
 const UserSchema = new Schema({
   name: String,
   img: String,
+  bio: String,
 });
 const Model = mongoose.model;
 const User = Model("datas", UserSchema);
@@ -31,7 +32,6 @@ app.use(express.static("public"));
 var username;
 var password;
 var userobj;
-var inroom;
 var insertdata;
 var signupuser;
 var signuppass;
@@ -40,6 +40,8 @@ const http = require("http");
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const { captureRejectionSymbol } = require("stream");
+const { name } = require("ejs");
+const { profile } = require("console");
 const io = new Server(server);
 
 MongoClient.connect(url, function (err, db) {
@@ -49,6 +51,7 @@ MongoClient.connect(url, function (err, db) {
       name: signupuser,
       Password: signuppass,
       img: "/muchcold-1tbom1k.png",
+      bio: "Default Doge enjoyer"
     };
     dbo.collection("datas").insertOne(myobj, function (err, res) {
       if (err) throw err;
@@ -78,12 +81,13 @@ MongoClient.connect(url, function (err, db) {
     finddata();
   });
   io.on("connection", (socket) => {
-    socket.on("chat message", (msg, room) => {
-      msgobj = { message: msg };
+    socket.on("chat message", (nameuser, msg, room) => {
+      console.log(nameuser)
+      msgobj = { message: msg, name: nameuser};
       dbo.collection(room).insertOne(msgobj, function (err, res) {
         console.log("message added to db");
       });
-      io.emit(room, msg);
+      io.emit(room, msgobj);
     });
     socket.on("newroom", (roomname) => {
       dbo.createCollection(roomname, function (err, res) {
@@ -106,14 +110,29 @@ MongoClient.connect(url, function (err, db) {
     socket.on('requser', (id) => {
       io.emit('userobj' + id, userobj)
     });
+    socket.on('savebio', (data, nm) => {
+      User.updateOne({ name: nm }, { bio: data }, (err, res) => {
+        dbo.collection("datas").findOne({name: nm}, function(err, result) {
+          console.log(result)
+          io.emit('userobj', result)        
+        });
+      });
+    })
+    socket.on('userprofile', (name, id) => {
+      dbo.collection("datas").find({ name: name}).forEach(function (doc) {
+        io.emit('userprofiledata' + id, doc.bio)
+      });
+    })
   });
 });
-
+app.get('/userprofile', function (req, res) {
+  res.sendFile(__dirname + "/userprofile.html")
+})
 server.listen(8080, function () {
   console.log("server is running on port 8080");
 });
 app.get("/homepage", function (req, res) {
-  res.render(__dirname + "/home.ejs");
+  res.sendFile(__dirname + "/home.html");
 });
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/signup.html");
@@ -131,27 +150,7 @@ app.get("/a", function (req, res) {
   res.sendFile(__dirname + "/login.html");
 });
 
-app.get("/b", function (req, res) {
-  res.render(__dirname + "/profile.ejs", { userobj });
-});
-
-app.post("/b", function (req, res) {
-  var formidable = require("formidable");
-  var fs = require("fs");
-  var form = new formidable.IncomingForm();
-  form.parse(req, function (err, fields, files) {
-    var oldpath = files.filetoupload.filepath;
-    var newpath =
-      "/Users/eriktuft/Desktop/untitled folder/public/" +
-      files.filetoupload.originalFilename;
-    var imgname = files.filetoupload.originalFilename;
-    console.log(imgname);
-    User.updateOne({ name: username }, { img: imgname }, (err, res) => {
-      console.log("Updated");
-    });
-    fs.rename(oldpath, newpath, function (err) {
-      if (err) throw err;
-      res.redirect("/b");
-    });
-  });
+app.get("/Profile", function (req, res) {
+  res.sendFile(__dirname + "/profile.html", {});
+  io.emit('a', 'hello')
 });

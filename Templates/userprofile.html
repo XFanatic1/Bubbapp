@@ -1,0 +1,81 @@
+
+<html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Document</title>
+    </head>
+    <body>
+    <a href="/homepage">Home</a>
+      <div class="panel">
+        <div class="biodiv">
+          <h1 id="profilename"></h1>
+          <form>
+            <textarea class="bio" cols="30" rows="10" id="bio" maxlength="100"></textarea>
+          </form>
+        </div>
+      </div>
+    </body>
+</html>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var id = Math.floor((Math.random() * 100))
+
+    var socket = io()
+
+    var profile = JSON.parse(sessionStorage.toprofile);
+
+    document.getElementById("profilename").innerHTML = profile.name
+
+    socket.emit('userprofile', profile.name, id)
+
+    socket.on('userprofiledata' + id, function(data) {
+        document.getElementById('bio').value = data
+    })
+</script>
+<style>
+
+    textarea {
+      color: #60626e;
+      font-size: small;
+      font-family: helvetica;
+      border: 1px solid #d1d9e6;
+      background-color: #dcdde6;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    textarea:focus {
+      outline: none;
+    }
+    h1 {
+      color: #1E90FF;
+    }
+    .biodiv {
+      position: relative;
+      margin: auto;
+      top: -15px;
+    }
+    .bio {
+      max-width: 300px;
+      min-width: 300px;
+      min-height: 100px;
+      max-height: 100px;
+    }
+    .panel {
+      width: 350px;
+      height: 300px;
+      border-radius: 5px;
+      position: absolute;
+      background-color: #ececec;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+    }
+    body {
+      background-color: #73bbff;
+      font-family: helvetica;
+    }                                                                     
+  </style>
