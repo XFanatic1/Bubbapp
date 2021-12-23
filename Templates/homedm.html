@@ -21,7 +21,9 @@
             <h1>Bubbapp</h1>
             <button onclick="newroom()">+</button>
             <form action="" id="roomnameform" class="nameser">
-                <input id="input2"type="text" placeholder="New Room Name" class="newroom"><a class="DM" href="/homedm">Direct Messages</a>
+                <input id="input2"type="text" placeholder='To: "Username"' class="newroom">
+                <a class="DM" href="/homepage">Public Rooms</a>
+                
             </form>
             <ul id="rooms">
             </ul>
@@ -49,18 +51,20 @@
         var input2 = document.getElementById("input2")
         var socket = io()
 
-
         if (sessionStorage.getItem('loggedin') !== 'true') { 
             socket.emit('requser', id)
+        }else {
+            user = JSON.parse(sessionStorage.user);
         }
-        socket.emit('loadrooms', id)
+        socket.emit('loaddmrooms', user.name)
         function logout(){
             sessionStorage.clear();
         }
         function newroom() {
             var roomname = document.getElementById("roomnameform")[0].value;
             if (roomname !== '') {
-                socket.emit('newroom', roomname)
+                let otheruser = user.name
+                socket.emit('newdmroom', roomname, otheruser)
             }
             input2.value = '';
         }
@@ -118,12 +122,11 @@
             let obj = {name: name}
             sessionStorage.setItem('toprofile', JSON.stringify(obj));
         }
-        socket.on('showroom', function(data) {
+        socket.on(user.name, function(colobj) {
             var item = document.createElement('div');
-            item.textContent = data;
+            item.textContent = colobj;
             rooms.appendChild(item);
-            console.log(data)
-            item.onclick = function() {setroom(data);};
+            item.onclick = function() {setroom(colobj);};
             item.setAttribute("class", "serdiv");
         });
         socket.on('msg' + id, function(msgobj) {
@@ -133,7 +136,6 @@
             item.setAttribute("class", "mesdiv");
             item.setAttribute("id", "demo");
 
-            console.log(msgobj.name)
             var link = document.createElement('a');
             link.onclick = function() {toprofile(msgobj.name);};
             var a = document.createTextNode(msgobj.name);
@@ -144,12 +146,12 @@
             var xH = chatWindow.scrollHeight; 
             chatWindow.scrollTo(0, xH);
         });
-        socket.on('room' + id, function(collectionobj) {
+        socket.on('room' + user.name, function(collectionobj) {
             var item = document.createElement('div');
-            item.textContent = collectionobj.name; //envuntually make functions
+            item.textContent = collectionobj; //envuntually make functions
             rooms.appendChild(item);
             item.setAttribute("class", "serdiv");
-            item.onclick = function() {setroom(collectionobj.name);};
+            item.onclick = function() {setroom(collectionobj);};
 
         });
         socket.on('userobj' + id, function(userobj) {
@@ -167,7 +169,7 @@
 <!-- $$$ STYLEING FOR COMPLETE.HTML $$$ -->
 
 <style>
-.DM {
+    .DM {
     position: relative;
     top: -9px;
     left: 15px;
@@ -183,15 +185,15 @@
     color: #60626e;
     background-color: #d4d5e0;
 }
-.newroom {
-    position: relative;
-    border: 1px solid #d1d9e6;
-    background-color: #dcdde6;
-    border-radius: 10px;
-    border-radius: 10px;
-    padding: 10px;
-    top: -11px;
-}
+    .newroom {
+        position: relative;
+        border: 1px solid #d1d9e6;
+        background-color: #dcdde6;
+        border-radius: 10px;
+        border-radius: 10px;
+        padding: 10px;
+        top: -11px;
+    }
 .nameser {
     position: relative;
     left: 75px;
