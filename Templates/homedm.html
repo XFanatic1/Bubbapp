@@ -29,8 +29,9 @@
             </ul>
         </div>
         <div class="paneltwo" id="mesholder">
-            <ul id="messages"></ul>
-
+            <div id="mess">
+                <ul class="mes" id="messages"></ul>
+            </div>
         </div>
 
         <form id="form" action="" class="conform">
@@ -50,15 +51,16 @@
         var loggedin
         var input2 = document.getElementById("input2")
         var socket = io()
-
-        if (sessionStorage.getItem('loggedin') !== 'true') { 
+        var run
+        
+        if (localStorage.getItem('loggedin') !== 'true') { 
             socket.emit('requser', id)
         }else {
-            user = JSON.parse(sessionStorage.user);
+            user = JSON.parse(localStorage.user);
         }
         socket.emit('loaddmrooms', user.name)
         function logout(){
-            sessionStorage.clear();
+            localStorage.clear();
         }
         function newroom() {
             var roomname = document.getElementById("roomnameform")[0].value;
@@ -100,8 +102,9 @@
             });
         }
         function setroom(data) {
-            socket.off(selectedRoom);
-            var myobj = document.getElementById('demo');
+            if (selectedRoom !== data) {
+                socket.off(selectedRoom);
+                var myobj = document.getElementById('demo');
                 if (myobj !== null) {
                     while(true) {
                         myobj = document.getElementById('demo'); //fetches new element
@@ -111,10 +114,11 @@
                         myobj.remove()
                     }
                 }
-            selectedRoom = data
-            // console.log(user.name)
-            socket.emit('loadfromdb', selectedRoom, id)
-            listen()
+                selectedRoom = data
+                // console.log(user.name)
+                socket.emit('loadfromdb', selectedRoom, id)
+                listen()
+            }
         }
         
         //TOPROFILE
@@ -130,6 +134,7 @@
             item.setAttribute("class", "serdiv");
         });
         socket.on('msg' + id, function(msgobj) {
+            // document.getElementById('mess').style.display = "none"
             var item = document.createElement('div');
             item.textContent = msgobj.message;
             messages.appendChild(item);
@@ -143,9 +148,16 @@
             link.href = "/userprofile/"
             item.prepend(link)
             var chatWindow = document.getElementById('mesholder'); 
-            var xH = chatWindow.scrollHeight; 
+            var xH = chatWindow.scrollHeight;
             chatWindow.scrollTo(0, xH);
         });
+        // socket.on('donemsg', function(data) {
+        //     console.log('invoked')
+        //     document.getElementById('mess').style.display = "block"
+        //     var chatWindow = document.getElementById('mesholder'); 
+        //     var xH = chatWindow.scrollHeight;
+        //     chatWindow.scrollTo(0, xH);
+        // })
         socket.on('room' + user.name, function(collectionobj) {
             var item = document.createElement('div');
             item.textContent = collectionobj; //envuntually make functions
@@ -156,10 +168,10 @@
         });
         socket.on('userobj' + id, function(userobj) {
             console.log('setting item in storage')
-            sessionStorage.setItem('user', JSON.stringify(userobj));
-            sessionStorage.setItem('loggedin', true);
-            user = JSON.parse(sessionStorage.user);
-            logged = JSON.parse(sessionStorage.loggedin);  
+            localStorage.setItem('user', JSON.stringify(userobj));
+            localStorage.setItem('loggedin', true);
+            user = JSON.parse(localStorage.user);
+            logged = JSON.parse(localStorage.loggedin);  
         });
         </script>
     </div>
@@ -169,7 +181,11 @@
 <!-- $$$ STYLEING FOR COMPLETE.HTML $$$ -->
 
 <style>
-    .DM {
+.mes {
+    position: relative;
+    top: -50px;
+}
+.DM {
     position: relative;
     top: -9px;
     left: 15px;
@@ -185,15 +201,15 @@
     color: #60626e;
     background-color: #d4d5e0;
 }
-    .newroom {
-        position: relative;
-        border: 1px solid #d1d9e6;
-        background-color: #dcdde6;
-        border-radius: 10px;
-        border-radius: 10px;
-        padding: 10px;
-        top: -11px;
-    }
+.newroom {
+    position: relative;
+    border: 1px solid #d1d9e6;
+    background-color: #dcdde6;
+    border-radius: 10px;
+    border-radius: 10px;
+    padding: 10px;
+    top: -11px;
+}
 .nameser {
     position: relative;
     left: 75px;
@@ -247,9 +263,14 @@ input:focus {
     left: 20px;
     top: 50px;
     padding: 8px;
-    border-radius: 10px;
+    border-radius: 5px;
     word-wrap:break-word;
     max-width: 97%;
+    background-color: rgb(245, 245, 245);
+    padding: 10px;
+    margin-bottom: 15px;
+    box-shadow: 2px 2px 5px darkgray;
+    
 }
 
 .server {

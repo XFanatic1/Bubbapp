@@ -27,8 +27,9 @@
             </ul>
         </div>
         <div class="paneltwo" id="mesholder">
-            <ul id="messages"></ul>
-
+            <div id="mess">
+                <ul class="mes" id="messages"></ul>
+            </div>
         </div>
 
         <form id="form" action="" class="conform">
@@ -50,12 +51,12 @@
         var socket = io()
 
 
-        if (sessionStorage.getItem('loggedin') !== 'true') { 
+        if (localStorage.getItem('loggedin') !== 'true') { 
             socket.emit('requser', id)
         }
         socket.emit('loadrooms', id)
         function logout(){
-            sessionStorage.clear();
+            localStorage.clear();
         }
         function newroom() {
             var roomname = document.getElementById("roomnameform")[0].value;
@@ -96,8 +97,9 @@
             });
         }
         function setroom(data) {
-            socket.off(selectedRoom);
-            var myobj = document.getElementById('demo');
+            if (selectedRoom !== data) {
+                socket.off(selectedRoom);
+                var myobj = document.getElementById('demo');
                 if (myobj !== null) {
                     while(true) {
                         myobj = document.getElementById('demo'); //fetches new element
@@ -107,10 +109,11 @@
                         myobj.remove()
                     }
                 }
-            selectedRoom = data
-            // console.log(user.name)
-            socket.emit('loadfromdb', selectedRoom, id)
-            listen()
+                selectedRoom = data
+                // console.log(user.name)
+                socket.emit('loadfromdb', selectedRoom, id)
+                listen()
+            }
         }
         
         //TOPROFILE
@@ -127,21 +130,21 @@
             item.setAttribute("class", "serdiv");
         });
         socket.on('msg' + id, function(msgobj) {
+            document.getElementById('mess').style.display = "block"
             var item = document.createElement('div');
             item.textContent = msgobj.message;
             messages.appendChild(item);
             item.setAttribute("class", "mesdiv");
             item.setAttribute("id", "demo");
-
-            console.log(msgobj.name)
             var link = document.createElement('a');
             link.onclick = function() {toprofile(msgobj.name);};
             var a = document.createTextNode(msgobj.name);
             link.append(a);
             link.href = "/userprofile/"
             item.prepend(link)
+
             var chatWindow = document.getElementById('mesholder'); 
-            var xH = chatWindow.scrollHeight; 
+            var xH = chatWindow.scrollHeight;
             chatWindow.scrollTo(0, xH);
         });
         socket.on('room' + id, function(collectionobj) {
@@ -154,10 +157,10 @@
         });
         socket.on('userobj' + id, function(userobj) {
             console.log('setting item in storage')
-            sessionStorage.setItem('user', JSON.stringify(userobj));
-            sessionStorage.setItem('loggedin', true);
-            user = JSON.parse(sessionStorage.user);
-            logged = JSON.parse(sessionStorage.loggedin);  
+            localStorage.setItem('user', JSON.stringify(userobj));
+            localStorage.setItem('loggedin', true);
+            user = JSON.parse(localStorage.user);
+            logged = JSON.parse(localStorage.loggedin);  
         });
         </script>
     </div>
@@ -167,6 +170,10 @@
 <!-- $$$ STYLEING FOR COMPLETE.HTML $$$ -->
 
 <style>
+.mes {
+    position: relative;
+    top: -50px;
+}
 .DM {
     position: relative;
     top: -9px;
@@ -245,9 +252,14 @@ input:focus {
     left: 20px;
     top: 50px;
     padding: 8px;
-    border-radius: 10px;
+    border-radius: 5px;
     word-wrap:break-word;
     max-width: 97%;
+    background-color: rgb(245, 245, 245);
+    padding: 10px;
+    margin-bottom: 15px;
+    box-shadow: 2px 2px 5px darkgray;
+    
 }
 
 .server {

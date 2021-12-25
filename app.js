@@ -46,7 +46,7 @@ const io = new Server(server);
 
 MongoClient.connect(url, function (err, db) {
   var dbo = db.db("mydb");
-  app.post("/", function (req, res) {
+  app.post("/signup", function (req, res) {
     signupuser = String(req.body.Username);
     signuppass = String(req.body.Password);
     insertdata = function () {
@@ -56,21 +56,23 @@ MongoClient.connect(url, function (err, db) {
             bool = false
           }
         });
-        if (bool === true) {
-          var myobj = {
-            name: signupuser,
-            Password: signuppass,
-            img: "/muchcold-1tbom1k.png",
-            bio: "Default Doge enjoyer"
-          };
-          dbo.collection("datas").insertOne(myobj, function (err, res) {
-            if (err) throw err;
-            console.log("1 document inserted");
-          });
-          res.sendFile(__dirname + "/login.html");
-        }else {
-          res.sendFile(__dirname + "/signup.html");
-        }
+        setTimeout(() => {
+          if (bool === true) {
+            var myobj = {
+              name: signupuser,
+              Password: signuppass,
+              img: "/muchcold-1tbom1k.png",
+              bio: "Default Doge enjoyer"
+            };
+            dbo.collection("datas").insertOne(myobj, function (err, res) {
+              if (err) throw err;
+              console.log("1 document inserted");
+            });
+            res.redirect('/a')
+          }else {
+            res.redirect('/signup')
+          }
+        }, 250);
     };
     insertdata();
   });
@@ -90,7 +92,7 @@ MongoClient.connect(url, function (err, db) {
       setTimeout(() => {
         if (loggedin === false) {
           console.log("retry");
-          res.sendFile(__dirname + "/login.html");
+          res.redirect('/a');
         }
       }, 250); //gotta learn async functions this will break my app some time later...
     }
@@ -105,17 +107,27 @@ MongoClient.connect(url, function (err, db) {
       io.emit(room, msgobj);
     });
     socket.on("newroom", (roomname) => {
-      dbo.createCollection(roomname, function (err, res) {
-        console.log(roomname + " Collection created!");
-      });
-      let colnameobj = {name: roomname}
-      dbo.collection('colnames').insertOne(colnameobj)
-      io.emit("showroom", roomname);
+      let bool = true
+      dbo.collection('colnames').find({name: roomname}).forEach(function (doc) {
+        if (doc.name === roomname) {
+          bool = false
+        }
+      })
+      setTimeout(() => {
+        if (bool === true) {
+          dbo.createCollection(roomname, function (err, res) {
+            console.log(roomname + " Collection created!");
+          });
+          let colnameobj = {name: roomname}
+          dbo.collection('colnames').insertOne(colnameobj)
+          io.emit("showroom", roomname);
+        }
+      }, 500);
     });
     socket.on("loadfromdb", (room, id) => {
       dbo.collection(room).find().forEach(function (doc) {
           io.emit("msg" + id, doc); // ultimatly wanted to send collection as obj the ireterate but im too lazy, please do later
-        });
+      })
     });
     socket.on("loadrooms", (id) => {
       dbo.collection('colnames').find().forEach(function (doc) {
@@ -139,21 +151,32 @@ MongoClient.connect(url, function (err, db) {
       });
     })
     socket.on("newdmroom", (dmname, otheruser) => {
-      let bool = true
-      dbo.collection('coldmnames').find({name: dmname + ' and ' + otheruser}).forEach(function (doc) {
-        if (doc !== null) {
-          console.log('retry')
-          bool = false
-        }
-      });
-      if (bool === true) {
-        dbo.createCollection(dmname + ' and ' + otheruser, function (err, res) {
-          console.log(dmname + " Collection created!");
-        });
-        let colnameobj = {name: dmname + ' and ' + otheruser, user1: dmname, user2: otheruser}
-        dbo.collection('coldmnames').insertOne(colnameobj)
-        io.emit(dmname, colnameobj.name);
-        io.emit(otheruser, colnameobj.name);
+      var bool = true
+      var bool2 = false
+      if (dmname !== otheruser) {
+        dbo.collection('coldmnames').find({name: dmname + ' and ' + otheruser}).forEach(function (doc) {
+          if (doc.name === dmname + ' and ' + otheruser) {
+            console.log('retry')
+            bool = false
+          }
+        })
+        dbo.collection('datas').find().forEach(function (doc) {
+          if (dmname === doc.name) {
+            bool2 = true
+          }
+        })
+        setTimeout(() => {
+          console.log(bool2)
+          if (bool === true && bool2 === true) {
+            dbo.createCollection(dmname + ' and ' + otheruser, function (err, res) {
+              console.log(dmname + " Collection created!");
+            });
+            let colnameobj = {name: dmname + ' and ' + otheruser, user1: dmname, user2: otheruser}
+            dbo.collection('coldmnames').insertOne(colnameobj)
+            io.emit(dmname, colnameobj.name);
+            io.emit(otheruser, colnameobj.name);
+          }          
+        }, 500);
       }
     })
     socket.on("loaddmrooms", (id) => {
@@ -177,7 +200,7 @@ server.listen(8080, function () {
 app.get("/homepage", function (req, res) {
   res.sendFile(__dirname + "/home.html");
 });
-app.get("/", function (req, res) {
+app.get("/signup", function (req, res) {
   res.sendFile(__dirname + "/signup.html");
 });
 
@@ -193,8 +216,7 @@ app.get("/homedm", function (req, res) {
   res.sendFile(__dirname + "/homedm.html", {});
 });
 
-
-
-
-
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/bubbapp.html");
+});
 
